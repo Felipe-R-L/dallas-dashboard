@@ -1,0 +1,9 @@
+node_modules
+.angular
+.gemini
+.windsurf
+dist
+env
+.env
+*environment.ts
+*environment.prod.ts
