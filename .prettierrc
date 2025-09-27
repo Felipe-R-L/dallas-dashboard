@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/prettierrc",
+  "pluginSearchDirs": ["."],
+  "plugins": ["@ianvs/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
+
+  "printWidth": 100,
+  "singleQuote": true,
+  "trailingComma": "all",
+  "semi": true,
+  "tailwindStylesheet": "./src/styles.css",
+
+  "overrides": [
+    {
+      "files": ["*.html", "*.component.html"],
+      "options": { "parser": "angular" }
+    }
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "importOrderBuiltinModulesToTop": true,
+  "importOrderCaseInsensitive": true,
+  "importOrderParserPlugins": ["typescript", "decorators-legacy"],
+  "tailwindFunctions": ["hlm", "cva"]
+}
