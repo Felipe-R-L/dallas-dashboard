@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SelectComponent, SelectOption } from '../select/select';
 import { InputComponent } from '../input/input';
+import { CustomSelectComponent, SelectOption } from '../custom-select/custom-select';
 
 @Component({
   selector: 'app-dashboard-filter',
   standalone: true,
-  imports: [SelectComponent, InputComponent, FormsModule],
+  imports: [CustomSelectComponent, InputComponent, FormsModule],
   templateUrl: './dashboard-filter.html',
 })
 export class DashboardFilterComponent {

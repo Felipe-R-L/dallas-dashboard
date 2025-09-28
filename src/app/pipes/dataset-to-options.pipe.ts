@@ -1,6 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { Dataset } from '../services/firebase.service';
-import { SelectOption } from '../components/select/select';
+import { SelectOption } from '../components/custom-select/custom-select';
 
 @Pipe({
   name: 'datasetsToOptions',

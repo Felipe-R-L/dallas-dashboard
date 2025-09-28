@@ -16,7 +16,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/f
 })
 export class InputComponent implements ControlValueAccessor {
   @Input() label = '';
-  @Input() type: 'text' | 'date' | 'number' = 'text';
+  @Input() type: 'text' | 'date' | 'number' | 'password' = 'text';
   @Input() placeholder = '';
 
   value: string | number = '';
@@ -41,8 +41,7 @@ export class InputComponent implements ControlValueAccessor {
     this.isDisabled = isDisabled;
   }
 
-  onValueChange(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  onValueChange(value: any): void {
     this.onChange(value);
     this.onTouched();
   }

@@ -8,39 +8,30 @@ type ParsedTransactions = Omit<Transaction, 'id' | 'fileId' | 'datasetId'>;
   providedIn: 'root',
 })
 export class SpreadsheetService {
-  async parseTransactionsFromFiles(
-    files: File[],
-  ): Promise<{ revenues: ParsedTransactions[]; expenses: ParsedTransactions[] }> {
-    const allRevenues: ParsedTransactions[] = [];
-    const allExpenses: ParsedTransactions[] = [];
+  async parseTransactionsFromFile(file: File): Promise<Transaction[]> {
+    const transactions: Transaction[] = [];
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const json: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-    for (const file of files) {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json: any[] = XLSX.utils.sheet_to_json(worksheet);
+    json.forEach((row) => {
+      const transaction: ParsedTransactions = {
+        description: row['Descrição'] || 'N/A',
+        type: (row['Tipo'] || '').toLowerCase() === 'receita' ? 'revenue' : 'expense',
+        value: parseFloat((row['Valor liquido'] || '0').replace(',', '.')),
+        subcategory: row['Subcategoria'] || 'Outros',
+        paymentMethod: row['Forma de pagamento'] || 'N/A',
+        issueDate: this.formatExcelDate(row['Data de lançamento']),
+      };
 
-      json.forEach((row) => {
-        const transaction: ParsedTransactions = {
-          description: row['Descrição'] || 'N/A',
-          type: (row['Tipo'] || '').toLowerCase() === 'receita' ? 'revenue' : 'expense',
-          value: parseFloat((row['Valor liquido'] || '0').replace(',', '.')),
-          subcategory: row['Subcategoria'] || 'Outros',
-          paymentMethod: row['Forma de pagamento'] || 'N/A',
-          issueDate: this.formatExcelDate(row['Data de lançamento']),
-        };
+      if (isNaN(transaction.value)) return;
 
-        if (isNaN(transaction.value)) return;
+      transactions.push(transaction as Transaction);
+    });
 
-        if (transaction.type === 'revenue') {
-          allRevenues.push(transaction);
-        } else {
-          allExpenses.push(transaction);
-        }
-      });
-    }
-    return { revenues: allRevenues, expenses: allExpenses };
+    return transactions;
   }
 
   private formatExcelDate(excelDate: string | number): string {

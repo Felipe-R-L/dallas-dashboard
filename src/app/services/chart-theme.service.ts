@@ -8,7 +8,7 @@ import { tap } from 'rxjs/operators';
   providedIn: 'root',
 })
 export class ChartThemeService {
-  private themePath = 'public/charts/shine.js';
+  private themePath = '/shine.js';
 
   constructor(private http: HttpClient) {}
 

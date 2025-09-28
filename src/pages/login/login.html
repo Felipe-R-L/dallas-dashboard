@@ -1,0 +1,48 @@
+<div class="flex min-h-screen items-center justify-center p-4">
+  <div
+    class="w-full max-w-md transform rounded-2xl border border-border-glass bg-surface-glass/80 p-8 text-left shadow-2xl shadow-black/40 backdrop-blur-xl transition-all"
+  >
+    <div class="text-center">
+      <img src="./dallas.png" alt="logo" class="mx-auto h-12 w-auto" />
+      <h2 class="mt-6 text-2xl font-bold text-text-base">Acesse sua conta</h2>
+      <p class="mt-2 text-sm text-text-muted">Bem-vindo de volta!</p>
+    </div>
+    <form (ngSubmit)="handleLogin()" class="mt-8 space-y-6">
+      <app-input
+        label="E-mail"
+        type="text"
+        placeholder="seu@email.com"
+        [(ngModel)]="email"
+        name="email"
+      ></app-input>
+
+      <app-input
+        label="Senha"
+        type="password"
+        placeholder="********"
+        [(ngModel)]="password"
+        name="password"
+      ></app-input>
+
+      @if (errorMessage) {
+        <div class="rounded-md bg-red-500/20 p-3 text-center text-sm text-red-400">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <div>
+        <button
+          type="submit"
+          [disabled]="isLoading"
+          class="w-full rounded-lg bg-gradient-to-r from-accent-start to-accent-end px-5 py-3 font-semibold text-white shadow-lg transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none"
+        >
+          @if (isLoading) {
+            <span>Entrando...</span>
+          } @else {
+            <span>Entrar</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

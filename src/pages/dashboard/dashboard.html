@@ -13,7 +13,7 @@
           class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
         >
           <h3 class="truncate text-sm font-medium text-text-muted">Faturamento Bruto</h3>
-          <p class="mt-2 text-3xl font-semibold text-text-base">
+          <p class="mt-2 whitespace-nowrap text-2xl font-semibold text-text-base md:text-3xl">
             {{ grossRevenue | currency: 'BRL' }}
           </p>
         </div>
@@ -21,7 +21,7 @@
           class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
         >
           <h3 class="truncate text-sm font-medium text-text-muted">Despesa Total</h3>
-          <p class="mt-2 text-3xl font-semibold text-text-base">
+          <p class="mt-2 whitespace-nowrap text-2xl font-semibold text-text-base md:text-3xl">
             {{ totalExpenses | currency: 'BRL' }}
           </p>
         </div>
@@ -30,7 +30,7 @@
         >
           <h3 class="truncate text-sm font-medium text-text-muted">Lucro Líquido</h3>
           <p
-            class="mt-2 text-3xl font-semibold"
+            class="mt-2 whitespace-nowrap text-2xl font-semibold md:text-3xl"
             [ngClass]="netProfit > 0 ? 'text-green-400' : 'text-red-500'"
           >
             {{ netProfit | currency: 'BRL' }}
@@ -40,7 +40,7 @@
           class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
         >
           <h3 class="truncate text-sm font-medium text-text-muted">Margem de Lucro</h3>
-          <p class="mt-2 text-3xl font-semibold text-text-base">
+          <p class="mt-2 whitespace-nowrap text-2xl font-semibold text-text-base md:text-3xl">
             {{ profitMargin | percent: '1.2-2' }}
           </p>
         </div>
@@ -48,7 +48,7 @@
           class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
         >
           <h3 class="truncate text-sm font-medium text-text-muted">Ticket Médio</h3>
-          <p class="mt-2 text-3xl font-semibold text-text-base">
+          <p class="mt-2 whitespace-nowrap text-2xl font-semibold text-text-base md:text-3xl">
             {{ averageTicket | currency: 'BRL' }}
           </p>
         </div>
@@ -166,10 +166,10 @@
                         <tbody class="divide-y divide-border-glass">
                           @for (expense of topExpensesData; track expense.description) {
                             <tr>
-                              <td
-                                class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-text-muted sm:pl-0"
-                              >
-                                {{ expense.description }}
+                              <td class="max-w-xs py-4 pl-4 pr-3 text-sm text-text-muted sm:pl-0">
+                                <div class="truncate" title="{{ expense.description }}">
+                                  {{ expense.description }}
+                                </div>
                               </td>
                               <td
                                 class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-red-500"
@@ -305,25 +305,12 @@
     >
       <div class="space-y-4">
         <div>
-          <label for="uploadDataset" class="mb-1.5 block text-sm font-medium text-text-muted"
-            >Importar para a empresa:</label
-          >
           @if (datasets$ | async; as datasets) {
-            <select
-              id="uploadDataset"
-              name="uploadDataset"
+            <app-custom-select
+              label="Importar para a empresa:"
+              [options]="datasets | datasetsToOptions"
               [(ngModel)]="uploadTargetDatasetId"
-              class="h-[42px] w-full appearance-none rounded-lg border border-border-glass bg-black/20 bg-no-repeat px-3 py-2 text-base transition-colors focus:border-border-glow focus:outline-none focus:ring-1 focus:ring-border-glow"
-              style="
-                background-image: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%2394a3b8%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e');
-                background-position: right 0.5rem center;
-                background-size: 1.5em 1.5em;
-              "
-            >
-              @for (dataset of datasets; track dataset.id) {
-                <option [value]="dataset.id" class="bg-[#020617]">{{ dataset.name }}</option>
-              }
-            </select>
+            ></app-custom-select>
           }
         </div>
         <app-file-uploader (filesSelected)="onFilesEmitted($event)"></app-file-uploader>

@@ -1,2 +1,5 @@
-<app-header></app-header>
+<!-- O header só será renderizado se o usuário estiver autenticado -->
+@if (isAuthenticated$ | async) {
+  <app-header />
+}
 <router-outlet />

@@ -1,4 +1,3 @@
-// ... existing imports
 import {
   AfterViewInit,
   Component,
@@ -10,14 +9,12 @@ import {
 } from '@angular/core';
 import * as echarts from 'echarts';
 import { EChartsOption } from 'echarts';
-import { Subject, debounceTime, takeUntil } from 'rxjs';
-import { ChartThemeService } from '../../services/chart-theme.service';
 
 @Component({
   selector: 'app-base-chart',
   standalone: true,
   imports: [],
-  template: '<div [id]="chartId"></div>',
+  template: '<div [id]="chartId" style="width: 100%; height: 400px;"></div>', // Adicionei altura
 })
 export class BaseChartComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() chartOptions: EChartsOption = {};
@@ -25,9 +22,8 @@ export class BaseChartComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   chart: echarts.ECharts | undefined;
 
-  private destroy$ = new Subject<void>();
-
-  constructor(private readonly _chartThemeService: ChartThemeService) {}
+  // O ChartThemeService não é mais necessário
+  constructor() {}
 
   @HostListener('window:resize')
   onResize(): void {
@@ -42,26 +38,13 @@ export class BaseChartComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.buildChart();
-    this._chartThemeService
-      .loadTheme()
-      .pipe(debounceTime(300), takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.destroyChart();
-        this.buildChart();
-      });
-  }
-
-  // NEW PUBLIC METHOD
-  public updateOptions(): void {
-    if (this.chart) {
-      this.chart.setOption(this.chartOptions);
-    }
   }
 
   private buildChart(): void {
     const chartDom = document.getElementById(this.chartId);
     if (chartDom) {
-      this.chart = echarts.init(chartDom);
+      // Diga ao ECharts para usar o tema 'shine' na inicialização
+      this.chart = echarts.init(chartDom, 'shine');
       this.chart.setOption(this.chartOptions);
     }
   }
@@ -75,7 +58,5 @@ export class BaseChartComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyChart();
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }

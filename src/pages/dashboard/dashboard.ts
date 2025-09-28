@@ -19,6 +19,7 @@ import { FileUploaderComponent } from '../../app/components/file-uploader/file-u
 import { CreateDatasetModalComponent } from '../../app/components/create-dataset-modal/create-dataset-modal';
 import { DashboardFilterComponent } from '../../app/components/dashboard-filter/dashboard-filter';
 import { DatasetsToOptionsPipe } from '../../app/pipes/dataset-to-options.pipe';
+import { CustomSelectComponent } from '../../app/components/custom-select/custom-select';
 
 @Component({
   selector: 'app-dashboard',
@@ -37,6 +38,7 @@ import { DatasetsToOptionsPipe } from '../../app/pipes/dataset-to-options.pipe';
     CreateDatasetModalComponent,
     DashboardFilterComponent,
     DatasetsToOptionsPipe,
+    CustomSelectComponent,
   ],
   templateUrl: './dashboard.html',
 })
@@ -164,39 +166,54 @@ export class Dashboard implements OnInit {
       alert('Ocorreu um erro ao criar a empresa.');
     }
   }
-
-  async processAndUploadFiles(): Promise<void> {
-    if (this.selectedFiles.length === 0 || !this.uploadTargetDatasetId) return;
-
-    this.isProcessing = true;
-    try {
-      const { revenues, expenses } = await this.spreadsheetService.parseTransactionsFromFiles(
-        this.selectedFiles,
-      );
-      const allTransactions = [...revenues, ...expenses];
-      const fileInfo = {
-        fileName: this.selectedFiles.map((f) => f.name).join(', '),
-        transactionCount: allTransactions.length,
-        importedAt: Timestamp.now(),
-      };
-
-      await this.firebaseService.addFileAndTransactions(
-        this.uploadTargetDatasetId,
-        fileInfo,
-        allTransactions.map((t) => ({ ...t, datasetId: this.uploadTargetDatasetId! })),
-      );
-
-      alert('Ficheiros processados e dados guardados com sucesso!');
-      this.closeUploadModal();
-      this.loadDataForCurrentDataset();
-    } catch (error) {
-      console.error('Erro ao processar ficheiros:', error);
-      alert('Ocorreu um erro ao processar os ficheiros.');
-    } finally {
-      this.isProcessing = false;
-    }
+  onFilesEmitted(files: File[]): void {
+    this.selectedFiles = files;
   }
 
+  async processAndUploadFiles(): Promise<void> {
+    if (this.selectedFiles.length === 0 || !this.uploadTargetDatasetId) {
+      console.error('Nenhum arquivo selecionado ou nenhuma empresa alvo.');
+      return;
+    }
+
+    this.isProcessing = true;
+
+    try {
+      for (const file of this.selectedFiles) {
+        console.log(`Processando o arquivo: ${file.name}`);
+
+        const transactions = await this.spreadsheetService.parseTransactionsFromFile(file);
+
+        if (transactions.length > 0) {
+          const fileInfo = {
+            fileName: file.name,
+            transactionCount: transactions.length,
+            importedAt: Timestamp.now(),
+          };
+
+          await this.firebaseService.addFileAndTransactions(
+            this.uploadTargetDatasetId,
+            fileInfo,
+            transactions,
+          );
+          console.log(
+            `Arquivo ${file.name} e ${transactions.length} transações salvas com sucesso!`,
+          );
+        } else {
+          console.warn(`Nenhuma transação encontrada no arquivo: ${file.name}`);
+        }
+      }
+
+      alert('Todos os arquivos foram processados com sucesso!');
+      this.closeUploadModal();
+    } catch (error) {
+      console.error('Ocorreu um erro durante o processamento dos arquivos:', error);
+      alert('Ocorreu um erro ao processar os arquivos. Verifique o console para mais detalhes.');
+    } finally {
+      this.isProcessing = false;
+      this.selectedFiles = [];
+    }
+  }
   resetDashboard(): void {
     this.grossRevenue = 0;
     this.totalExpenses = 0;
@@ -227,10 +244,6 @@ export class Dashboard implements OnInit {
 
   closeCreateDatasetModal(): void {
     this.isCreateDatasetModalOpen = false;
-  }
-
-  onFilesEmitted(files: File[]): void {
-    this.selectedFiles = files;
   }
 
   private updateDashboard(revenues: Transaction[], expenses: Transaction[]): void {
