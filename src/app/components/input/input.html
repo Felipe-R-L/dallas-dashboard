@@ -1,0 +1,11 @@
+<div class="flex w-full flex-col">
+  <label class="mb-1.5 text-sm font-medium text-text-muted">{{ label }}</label>
+  <input
+    [type]="type"
+    [placeholder]="placeholder"
+    [ngModel]="value"
+    (ngModelChange)="onValueChange($event)"
+    [disabled]="isDisabled"
+    class="h-[42px] w-full rounded-lg border border-border-glass bg-black/20 px-3 py-2 text-base placeholder-text-muted/70 transition-colors focus:border-border-glow focus:outline-none focus:ring-1 focus:ring-border-glow"
+  />
+</div>

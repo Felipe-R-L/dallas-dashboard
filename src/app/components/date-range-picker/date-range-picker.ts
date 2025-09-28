@@ -1,10 +1,11 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { InputComponent } from '../input/input'; // Importe o novo InputComponent
 
 @Component({
   selector: 'app-date-range-picker',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, InputComponent],
   templateUrl: './date-range-picker.html',
 })
 export class DateRangePickerComponent {

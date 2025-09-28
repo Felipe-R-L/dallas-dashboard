@@ -1,0 +1,48 @@
+<section
+  class="mb-8 rounded-2xl border border-border-glass bg-surface-glass shadow-2xl shadow-black/20 backdrop-blur-lg"
+>
+  <div class="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
+    <div>
+      <h2 class="text-xl font-bold text-text-base">Dashboard Financeiro</h2>
+      <p class="text-sm text-text-muted">Análise de Receitas e Despesas</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button
+        (click)="newCompany.emit()"
+        class="rounded-lg bg-surface-glass px-4 py-2 text-sm font-medium text-text-base ring-1 ring-inset ring-border-glass transition-colors hover:bg-border-glass"
+      >
+        Nova Empresa
+      </button>
+      <button
+        (click)="importFile.emit()"
+        class="rounded-lg bg-gradient-to-r from-accent-start to-accent-end px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform hover:scale-105"
+      >
+        Importar
+      </button>
+    </div>
+  </div>
+
+  <div class="border-t border-border-glass p-4 sm:p-5">
+    <div class="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 lg:flex lg:flex-wrap">
+      <app-select
+        class="flex-1"
+        label="Empresa"
+        [options]="datasets"
+        [(ngModel)]="selectedDatasetId"
+      ></app-select>
+      <app-input
+        class="flex-1"
+        label="Data de Início"
+        type="date"
+        [(ngModel)]="startDate"
+      ></app-input>
+      <app-input class="flex-1" label="Data de Fim" type="date" [(ngModel)]="endDate"></app-input>
+      <button
+        (click)="applyFilters()"
+        class="h-[42px] w-full rounded-lg bg-gradient-to-r from-accent-start to-accent-end px-5 py-2 font-semibold text-white shadow-lg transition-transform hover:scale-105 lg:w-auto"
+      >
+        Aplicar
+      </button>
+    </div>
+  </div>
+</section>

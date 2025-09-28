@@ -1,0 +1,19 @@
+<app-modal [isOpen]="true" [title]="'Criar Nova Empresa'" (close)="close.emit()">
+  <div class="space-y-4">
+    <app-input
+      label="Nome da Empresa"
+      placeholder="Ex: Dallas Hotel"
+      [(ngModel)]="datasetName"
+      (keyup.enter)="onCreate()"
+    ></app-input>
+  </div>
+  <div class="mt-6 flex justify-end border-t border-border-glass pt-5">
+    <button
+      (click)="onCreate()"
+      [disabled]="!datasetName.trim()"
+      class="rounded-lg bg-gradient-to-r from-accent-start to-accent-end px-5 py-2.5 font-semibold text-white shadow-lg transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none"
+    >
+      Criar Empresa
+    </button>
+  </div>
+</app-modal>

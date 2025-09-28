@@ -1,33 +1,81 @@
-import { AfterViewInit, Directive, ElementRef, Input } from '@angular/core';
+// ... existing imports
+import {
+  AfterViewInit,
+  Component,
+  HostListener,
+  Input,
+  OnChanges,
+  OnDestroy,
+  SimpleChanges,
+} from '@angular/core';
 import * as echarts from 'echarts';
 import { EChartsOption } from 'echarts';
+import { Subject, debounceTime, takeUntil } from 'rxjs';
 import { ChartThemeService } from '../../services/chart-theme.service';
 
-@Directive()
-export abstract class BaseChartComponent implements AfterViewInit {
-  @Input() chartId!: string;
-  @Input() chartOptions!: EChartsOption;
-  @Input() theme: string = 'default-theme';
+@Component({
+  selector: 'app-base-chart',
+  standalone: true,
+  imports: [],
+  template: '<div [id]="chartId"></div>',
+})
+export class BaseChartComponent implements OnChanges, AfterViewInit, OnDestroy {
+  @Input() chartOptions: EChartsOption = {};
+  @Input() chartId = 'chart';
 
-  protected chartInstance!: echarts.ECharts;
+  chart: echarts.ECharts | undefined;
 
-  constructor(
-    protected elRef: ElementRef,
-    private chartThemeService: ChartThemeService,
-  ) {}
+  private destroy$ = new Subject<void>();
 
-  ngAfterViewInit(): void {
-    const chartDom =
-      this.elRef.nativeElement.querySelector('#' + this.chartId) || this.elRef.nativeElement;
-    this.chartInstance = echarts.init(chartDom, this.theme);
-    this.chartInstance.setOption(this.chartOptions);
-    window.addEventListener('resize', () => {
-      this.chartInstance.resize();
-    });
+  constructor(private readonly _chartThemeService: ChartThemeService) {}
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.chart?.resize();
   }
 
-  updateChartOptions(options: EChartsOption): void {
-    this.chartOptions = options;
-    this.chartInstance && this.chartInstance.setOption(this.chartOptions);
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['chartOptions'] && this.chart) {
+      this.chart.setOption(this.chartOptions);
+    }
+  }
+
+  ngAfterViewInit(): void {
+    this.buildChart();
+    this._chartThemeService
+      .loadTheme()
+      .pipe(debounceTime(300), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.destroyChart();
+        this.buildChart();
+      });
+  }
+
+  // NEW PUBLIC METHOD
+  public updateOptions(): void {
+    if (this.chart) {
+      this.chart.setOption(this.chartOptions);
+    }
+  }
+
+  private buildChart(): void {
+    const chartDom = document.getElementById(this.chartId);
+    if (chartDom) {
+      this.chart = echarts.init(chartDom);
+      this.chart.setOption(this.chartOptions);
+    }
+  }
+
+  private destroyChart(): void {
+    if (this.chart) {
+      this.chart.dispose();
+      this.chart = undefined;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroyChart();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

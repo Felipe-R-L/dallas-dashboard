@@ -1,211 +1,352 @@
-<div class="min-h-screen w-full bg-gray-50 font-sans">
-  <div class="mx-auto max-w-screen-2xl p-4 md:p-8">
-    <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-800">Dashboard Financeiro</h1>
-        <p class="mt-1 text-gray-500">Análise de Receitas e Despesas</p>
-      </div>
-      <div class="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:items-center">
-        <app-date-range-picker (dateRangeChange)="loadData($event)"></app-date-range-picker>
-        <button
-          (click)="openUploadModal()"
-          class="flex h-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-md transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+<div class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+  @if (datasets$ | async; as datasets) {
+    <app-dashboard-filter
+      [datasets]="datasets | datasetsToOptions"
+      (filterChange)="onDateRangeChange($event)"
+      (newCompany)="openCreateDatasetModal()"
+      (importFile)="openUploadModal()"
+    ></app-dashboard-filter>
+
+    @if (hasDatasets) {
+      <section class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+        <div
+          class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
+          <h3 class="truncate text-sm font-medium text-text-muted">Faturamento Bruto</h3>
+          <p class="mt-2 text-3xl font-semibold text-text-base">
+            {{ grossRevenue | currency: 'BRL' }}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
+        >
+          <h3 class="truncate text-sm font-medium text-text-muted">Despesa Total</h3>
+          <p class="mt-2 text-3xl font-semibold text-text-base">
+            {{ totalExpenses | currency: 'BRL' }}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
+        >
+          <h3 class="truncate text-sm font-medium text-text-muted">Lucro Líquido</h3>
+          <p
+            class="mt-2 text-3xl font-semibold"
+            [ngClass]="netProfit > 0 ? 'text-green-400' : 'text-red-500'"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-            />
-          </svg>
-          Importar
-        </button>
-      </div>
-    </header>
+            {{ netProfit | currency: 'BRL' }}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
+        >
+          <h3 class="truncate text-sm font-medium text-text-muted">Margem de Lucro</h3>
+          <p class="mt-2 text-3xl font-semibold text-text-base">
+            {{ profitMargin | percent: '1.2-2' }}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-border-glass bg-surface-glass p-5 shadow-lg backdrop-blur-md"
+        >
+          <h3 class="truncate text-sm font-medium text-text-muted">Ticket Médio</h3>
+          <p class="mt-2 text-3xl font-semibold text-text-base">
+            {{ averageTicket | currency: 'BRL' }}
+          </p>
+        </div>
+      </section>
 
-    <section class="mt-8">
-      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-        <div class="overflow-hidden rounded-lg bg-white shadow">
-          <div class="p-5">
-            <p class="truncate text-sm font-medium text-gray-500">Faturamento Bruto</p>
-            <p class="mt-1 text-3xl font-semibold text-gray-900">
-              {{ grossRevenue | currency: 'BRL' }}
-            </p>
-          </div>
-        </div>
-        <div class="overflow-hidden rounded-lg bg-white shadow">
-          <div class="p-5">
-            <p class="truncate text-sm font-medium text-gray-500">Despesa Total</p>
-            <p class="mt-1 text-3xl font-semibold text-gray-900">
-              {{ totalExpenses | currency: 'BRL' }}
-            </p>
-          </div>
-        </div>
-        <div class="overflow-hidden rounded-lg bg-white shadow">
-          <div class="p-5">
-            <p class="truncate text-sm font-medium text-gray-500">Lucro Líquido</p>
-            <p
-              class="mt-1 text-3xl font-semibold"
-              [ngClass]="netProfit > 0 ? 'text-green-600' : 'text-red-600'"
+      <main class="mt-8">
+        <div class="border-b border-border-glass">
+          <nav class="-mb-px flex space-x-6">
+            <button
+              (click)="selectTab('revenue')"
+              [ngClass]="{
+                'border-accent-start text-accent-start': activeTab === 'revenue',
+                'border-transparent text-text-muted hover:border-border-glow hover:text-text-base':
+                  activeTab !== 'revenue',
+              }"
+              class="whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-colors"
             >
-              {{ netProfit | currency: 'BRL' }}
-            </p>
-          </div>
+              Faturamento
+            </button>
+            <button
+              (click)="selectTab('expenses')"
+              [ngClass]="{
+                'border-accent-start text-accent-start': activeTab === 'expenses',
+                'border-transparent text-text-muted hover:border-border-glow hover:text-text-base':
+                  activeTab !== 'expenses',
+              }"
+              class="whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-colors"
+            >
+              Despesas
+            </button>
+            <button
+              (click)="selectTab('files')"
+              [ngClass]="{
+                'border-accent-start text-accent-start': activeTab === 'files',
+                'border-transparent text-text-muted hover:border-border-glow hover:text-text-base':
+                  activeTab !== 'files',
+              }"
+              class="whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-colors"
+            >
+              Ficheiros Importados
+            </button>
+          </nav>
         </div>
-        <div class="overflow-hidden rounded-lg bg-white shadow">
-          <div class="p-5">
-            <p class="truncate text-sm font-medium text-gray-500">Margem de Lucro</p>
-            <p class="mt-1 text-3xl font-semibold text-gray-900">
-              {{ profitMargin | percent: '1.2-2' }}
-            </p>
-          </div>
-        </div>
-        <div class="overflow-hidden rounded-lg bg-white shadow">
-          <div class="p-5">
-            <p class="truncate text-sm font-medium text-gray-500">Ticket Médio</p>
-            <p class="mt-1 text-3xl font-semibold text-gray-900">
-              {{ averageTicket | currency: 'BRL' }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <main class="mt-8 flex-grow">
-      <div class="border-b border-gray-200">
-        <nav class="-mb-px flex space-x-6">
-          <button
-            (click)="selectTab('revenue')"
-            [ngClass]="{
-              'border-indigo-500 text-indigo-600': activeTab === 'revenue',
-              'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700':
-                activeTab !== 'revenue',
-            }"
-            class="whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-colors"
-          >
-            Faturamento
-          </button>
-          <button
-            (click)="selectTab('expenses')"
-            [ngClass]="{
-              'border-indigo-500 text-indigo-600': activeTab === 'expenses',
-              'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700':
-                activeTab !== 'expenses',
-            }"
-            class="whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-colors"
-          >
-            Despesas
-          </button>
-        </nav>
-      </div>
-
-      <div class="mt-6">
-        @if (activeTab === 'revenue') {
-          <div class="space-y-6">
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 class="font-semibold text-gray-800">Faturamento Diário e Tendência</h3>
-              <app-line-chart
-                [xAxisData]="dailyRevenueXAxis"
-                [seriesData]="lineChartSeries"
-              ></app-line-chart>
-            </div>
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h3 class="font-semibold text-gray-800">Faturamento por Subcategoria</h3>
-                <app-pie-chart
-                  uniqueId="revenueSubcategory"
-                  [seriesData]="revenueBySubcategoryData"
-                ></app-pie-chart>
+        <div class="mt-6">
+          @if (activeTab === 'revenue') {
+            <div class="space-y-6">
+              <div
+                class="rounded-xl border border-border-glass bg-surface-glass p-6 shadow-lg backdrop-blur-md"
+              >
+                <h3 class="font-semibold text-text-base">Faturamento Diário e Tendência</h3>
+                <app-line-chart
+                  [xAxisData]="dailyRevenueXAxis"
+                  [seriesData]="lineChartSeries"
+                ></app-line-chart>
               </div>
-              <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h3 class="font-semibold text-gray-800">Faturamento por Forma de Pagamento</h3>
-                <app-pie-chart
-                  uniqueId="paymentMethod"
-                  [seriesData]="revenueByPaymentMethodData"
-                ></app-pie-chart>
+              <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div
+                  class="rounded-xl border border-border-glass bg-surface-glass p-6 shadow-lg backdrop-blur-md"
+                >
+                  <h3 class="font-semibold text-text-base">Faturamento por Subcategoria</h3>
+                  <app-pie-chart
+                    uniqueId="revenueSubcategory"
+                    [seriesData]="revenueBySubcategoryData"
+                  ></app-pie-chart>
+                </div>
+                <div
+                  class="rounded-xl border border-border-glass bg-surface-glass p-6 shadow-lg backdrop-blur-md"
+                >
+                  <h3 class="font-semibold text-text-base">Faturamento por Forma de Pagamento</h3>
+                  <app-pie-chart
+                    uniqueId="paymentMethod"
+                    [seriesData]="revenueByPaymentMethodData"
+                  ></app-pie-chart>
+                </div>
               </div>
             </div>
-          </div>
-        }
+          }
 
-        @if (activeTab === 'expenses') {
-          <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
-              <h3 class="font-semibold text-gray-800">Despesas por Categoria</h3>
-              <app-pie-chart
-                uniqueId="expenses"
-                [seriesData]="expensesBySubcategoryData"
-              ></app-pie-chart>
-            </div>
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-3">
-              <h3 class="font-semibold text-gray-800">Top 10 Maiores Despesas do Mês</h3>
-              <div class="mt-4 flow-root">
-                <div class="-mx-6 -my-2 overflow-x-auto">
-                  <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                    <table class="min-w-full divide-y divide-gray-300">
-                      <thead>
-                        <tr>
-                          <th
-                            scope="col"
-                            class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
-                          >
-                            Descrição
-                          </th>
-                          <th
-                            scope="col"
-                            class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                          >
-                            Valor
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-gray-200">
-                        @for (expense of topExpensesData; track expense.description) {
+          @if (activeTab === 'expenses') {
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+              <div
+                class="rounded-xl border border-border-glass bg-surface-glass p-6 shadow-lg backdrop-blur-md lg:col-span-2"
+              >
+                <h3 class="font-semibold text-text-base">Despesas por Categoria</h3>
+                <app-pie-chart
+                  uniqueId="expenses"
+                  [seriesData]="expensesBySubcategoryData"
+                ></app-pie-chart>
+              </div>
+              <div
+                class="rounded-xl border border-border-glass bg-surface-glass p-6 shadow-lg backdrop-blur-md lg:col-span-3"
+              >
+                <h3 class="font-semibold text-text-base">Top 10 Maiores Despesas do Mês</h3>
+                <div class="mt-4 flow-root">
+                  <div class="-mx-6 -my-2 overflow-x-auto">
+                    <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                      <table class="min-w-full divide-y divide-border-glass">
+                        <thead>
                           <tr>
-                            <td
-                              class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-600 sm:pl-0"
+                            <th
+                              scope="col"
+                              class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-text-base sm:pl-0"
                             >
-                              {{ expense.description }}
-                            </td>
-                            <td
-                              class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-red-600"
+                              Descrição
+                            </th>
+                            <th
+                              scope="col"
+                              class="px-3 py-3.5 text-left text-sm font-semibold text-text-base"
                             >
-                              {{ expense.value | currency: 'BRL' }}
-                            </td>
+                              Valor
+                            </th>
                           </tr>
-                        }
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody class="divide-y divide-border-glass">
+                          @for (expense of topExpensesData; track expense.description) {
+                            <tr>
+                              <td
+                                class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-text-muted sm:pl-0"
+                              >
+                                {{ expense.description }}
+                              </td>
+                              <td
+                                class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-red-500"
+                              >
+                                {{ expense.value | currency: 'BRL' }}
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        }
-      </div>
-    </main>
-  </div>
+          }
 
-  <app-modal
-    [isOpen]="isUploadModalOpen"
-    [title]="'Importar Planilhas'"
-    (close)="closeUploadModal()"
-  >
-    <app-file-uploader (filesSelected)="onFilesEmitted($event)"></app-file-uploader>
-    <div class="mt-6 flex justify-end border-t border-gray-200 pt-4">
-      <button
-        (click)="closeUploadModal()"
-        class="rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-md transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          @if (activeTab === 'files') {
+            <div
+              class="rounded-xl border border-border-glass bg-surface-glass p-6 shadow-lg backdrop-blur-md"
+            >
+              <h3 class="font-semibold text-text-base">Ficheiros Processados</h3>
+              @if (importedFiles$ | async; as files) {
+                @if (files.length > 0) {
+                  <div class="mt-4 flow-root">
+                    <div class="-mx-6 -my-2 overflow-x-auto">
+                      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                        <table class="min-w-full divide-y divide-border-glass">
+                          <thead>
+                            <tr>
+                              <th
+                                scope="col"
+                                class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-text-base sm:pl-0"
+                              >
+                                Nome do Ficheiro
+                              </th>
+                              <th
+                                scope="col"
+                                class="px-3 py-3.5 text-left text-sm font-semibold text-text-base"
+                              >
+                                Transações
+                              </th>
+                              <th
+                                scope="col"
+                                class="px-3 py-3.5 text-left text-sm font-semibold text-text-base"
+                              >
+                                Data de Importação
+                              </th>
+                              <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
+                                <span class="sr-only">Ações</span>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-border-glass">
+                            @for (file of files; track file.id) {
+                              <tr>
+                                <td
+                                  class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-text-base sm:pl-0"
+                                >
+                                  {{ file.fileName }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-text-muted">
+                                  {{ file.transactionCount }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-text-muted">
+                                  {{ file.importedAt.toDate() | date: 'dd/MM/yyyy HH:mm' }}
+                                </td>
+                                <td
+                                  class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0"
+                                >
+                                  <button
+                                    (click)="deleteImportedFile(file.id!)"
+                                    class="text-red-500 hover:text-red-400"
+                                  >
+                                    Apagar<span class="sr-only">, {{ file.fileName }}</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <p class="mt-4 text-center text-text-muted">
+                    Nenhum ficheiro importado para esta empresa ainda.
+                  </p>
+                }
+              } @else {
+                <p class="mt-4 text-center text-text-muted">A carregar ficheiros...</p>
+              }
+            </div>
+          }
+        </div>
+      </main>
+    } @else {
+      <div
+        class="mt-16 text-center rounded-2xl border border-border-glass bg-surface-glass p-12 shadow-xl backdrop-blur-lg"
       >
-        Processar Ficheiros
-      </button>
-    </div>
-  </app-modal>
+        <svg
+          class="mx-auto h-12 w-12 text-text-muted"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+          />
+        </svg>
+        <h2 class="mt-4 text-xl font-semibold text-text-base">Bem-vindo ao Dallas Finance</h2>
+        <p class="mt-2 text-sm text-text-muted">
+          Crie sua primeira empresa para começar a importar e analisar seus dados financeiros.
+        </p>
+        <button
+          (click)="openCreateDatasetModal()"
+          class="mt-6 inline-flex items-center rounded-lg bg-gradient-to-r from-accent-start to-accent-end px-5 py-2.5 font-semibold text-white shadow-lg transition-transform hover:scale-105"
+        >
+          Criar Primeira Empresa
+        </button>
+      </div>
+    }
+  }
+
+  @if (isUploadModalOpen) {
+    <app-modal
+      [isOpen]="isUploadModalOpen"
+      [title]="'Importar Planilhas'"
+      (close)="closeUploadModal()"
+    >
+      <div class="space-y-4">
+        <div>
+          <label for="uploadDataset" class="mb-1.5 block text-sm font-medium text-text-muted"
+            >Importar para a empresa:</label
+          >
+          @if (datasets$ | async; as datasets) {
+            <select
+              id="uploadDataset"
+              name="uploadDataset"
+              [(ngModel)]="uploadTargetDatasetId"
+              class="h-[42px] w-full appearance-none rounded-lg border border-border-glass bg-black/20 bg-no-repeat px-3 py-2 text-base transition-colors focus:border-border-glow focus:outline-none focus:ring-1 focus:ring-border-glow"
+              style="
+                background-image: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%2394a3b8%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e');
+                background-position: right 0.5rem center;
+                background-size: 1.5em 1.5em;
+              "
+            >
+              @for (dataset of datasets; track dataset.id) {
+                <option [value]="dataset.id" class="bg-[#020617]">{{ dataset.name }}</option>
+              }
+            </select>
+          }
+        </div>
+        <app-file-uploader (filesSelected)="onFilesEmitted($event)"></app-file-uploader>
+      </div>
+      <div class="mt-6 flex justify-end border-t border-border-glass pt-5">
+        <button
+          (click)="processAndUploadFiles()"
+          [disabled]="isProcessing"
+          class="rounded-lg bg-gradient-to-r from-accent-start to-accent-end px-5 py-2.5 font-semibold text-white shadow-lg transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none"
+        >
+          @if (isProcessing) {
+            <span>A Processar...</span>
+          } @else {
+            <span>Processar Ficheiros</span>
+          }
+        </button>
+      </div>
+    </app-modal>
+  }
+  @if (isCreateDatasetModalOpen) {
+    <app-create-dataset-modal
+      (create)="handleCreateDataset($event)"
+      (close)="closeCreateDatasetModal()"
+    ></app-create-dataset-modal>
+  }
 </div>

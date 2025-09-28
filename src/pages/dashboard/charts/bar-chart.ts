@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, type OnDestroy } from '@angular/core';
 import { EChartsOption } from 'echarts';
-import { Subject } from 'rxjs';
 import { BaseChartComponent } from '../../../app/components/base-chart/base-chart';
 
 @Component({
@@ -11,8 +10,6 @@ import { BaseChartComponent } from '../../../app/components/base-chart/base-char
   template: '<div id="bar-chart" class="d-flex" style="width: 100%; height: 400px"></div>',
 })
 export class BarChartComponent extends BaseChartComponent implements OnDestroy {
-  private destroy$ = new Subject<void>();
-
   override chartOptions: EChartsOption = {
     tooltip: {
       trigger: 'axis',
@@ -56,9 +53,4 @@ export class BarChartComponent extends BaseChartComponent implements OnDestroy {
   } as const;
 
   override chartId = 'bar-chart';
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
 }

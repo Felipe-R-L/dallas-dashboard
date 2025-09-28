@@ -19,7 +19,7 @@ export class LineChartComponent extends BaseChartComponent implements OnChanges 
   override chartId = 'line-chart';
   override chartOptions: EChartsOption = {};
 
-  ngOnChanges(): void {
+  override ngOnChanges(): void {
     this.chartOptions = {
       tooltip: { trigger: 'axis' },
       legend: {
