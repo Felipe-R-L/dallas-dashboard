@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   Firestore,
   Timestamp,
@@ -47,7 +47,7 @@ export interface Transaction {
 export class FirebaseService {
   private firestore: Firestore = inject(Firestore);
 
-  getDatasets(): Observable<Dataset[]> {
+  getDatasets() {
     const datasetsCol = collection(this.firestore, 'datasets');
     return collectionData(datasetsCol, { idField: 'id' }) as Observable<Dataset[]>;
   }
@@ -57,31 +57,35 @@ export class FirebaseService {
     return addDoc(datasetsCol, { name });
   }
 
-  getTransactions(
+  async getTransactions(
     datasetId: string,
     startDate: Date,
     endDate: Date,
-  ): Observable<{ revenues: Transaction[]; expenses: Transaction[] }> {
+  ): Promise<{ revenues: Transaction[]; expenses: Transaction[] }> {
+    const filesCol = collection(this.firestore, `datasets/${datasetId}/importedFiles`);
+    const filesQuery = query(filesCol);
+    const filesSnapshot = await getDocs(filesQuery);
+    const fileIds = filesSnapshot.docs.map((d) => d.id);
+
+    if (fileIds.length === 0) {
+      return { revenues: [], expenses: [] };
+    }
+
     const transactionsCol = collection(this.firestore, 'transactions');
     const q = query(
       transactionsCol,
-      where('datasetId', '==', datasetId),
-
+      where('fileId', 'in', fileIds),
       where('timestamp', '>=', Timestamp.fromDate(startDate)),
       where('timestamp', '<=', Timestamp.fromDate(endDate)),
     );
 
-    return from(
-      getDocs(q).then((snapshot) => {
-        const allTransactions = snapshot.docs.map(
-          (d) => ({ id: d.id, ...d.data() }) as Transaction,
-        );
-        return {
-          revenues: allTransactions.filter((t) => t.type === 'revenue'),
-          expenses: allTransactions.filter((t) => t.type === 'expense'),
-        };
-      }),
-    );
+    const snapshot = await getDocs(q);
+    const allTransactions = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Transaction);
+
+    return {
+      revenues: allTransactions.filter((t) => t.type === 'revenue'),
+      expenses: allTransactions.filter((t) => t.type === 'expense'),
+    };
   }
 
   getImportedFiles(datasetId: string): Observable<ImportedFile[]> {
@@ -118,11 +122,8 @@ export class FirebaseService {
 
   async deleteFileAndTransactions(datasetId: string, fileId: string): Promise<void> {
     const transactionsCol = collection(this.firestore, 'transactions');
-    const q = query(
-      transactionsCol,
-      where('datasetId', '==', datasetId),
-      where('fileId', '==', fileId),
-    );
+
+    const q = query(transactionsCol, where('fileId', '==', fileId));
     const transactionsSnapshot = await getDocs(q);
 
     const batch = writeBatch(this.firestore);

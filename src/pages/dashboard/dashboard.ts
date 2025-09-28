@@ -90,43 +90,48 @@ export class Dashboard implements OnInit {
 
   ngOnInit(): void {}
 
-  loadInitialData(datasetId: string): void {
+  async loadInitialData(datasetId: string): Promise<void> {
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    this.loadData(datasetId, firstDayOfMonth, today);
+    await this.loadData(datasetId, firstDayOfMonth, today);
   }
 
-  onDateRangeChange(filters: {
+  async onDateRangeChange(filters: {
     datasetId: string | number;
     startDate: string;
     endDate: string;
-  }): void {
+  }): Promise<void> {
     if (!filters.datasetId) return;
     this.activeDatasetId = filters.datasetId as string;
 
-    // Converte as strings "AAAA-MM-DD" para objetos Date aqui
     const [startYear, startMonth, startDay] = filters.startDate.split('-').map(Number);
     const startDate = new Date(startYear, startMonth - 1, startDay);
 
     const [endYear, endMonth, endDay] = filters.endDate.split('-').map(Number);
     const endDate = new Date(endYear, endMonth - 1, endDay);
 
-    this.loadData(this.activeDatasetId, startDate, endDate);
+    await this.loadData(this.activeDatasetId, startDate, endDate);
   }
 
-  private loadData(datasetId: string, startDate: Date, endDate: Date): void {
-    // Garante que as horas cobrem o dia inteiro para a consulta
+  // --- INÍCIO DA CORREÇÃO ---
+  // A função agora é 'async' para permitir o uso do 'await'
+  private async loadData(datasetId: string, startDate: Date, endDate: Date): Promise<void> {
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
 
-    this.firebaseService
-      .getTransactions(datasetId, startDate, endDate)
-      .subscribe(({ revenues, expenses }) => {
-        this.updateDashboard(revenues, expenses);
-      });
+    // Usamos 'await' para esperar a Promise ser resolvida e obter o resultado
+    const { revenues, expenses } = await this.firebaseService.getTransactions(
+      datasetId,
+      startDate,
+      endDate,
+    );
+
+    // Com o resultado em mãos, chamamos a função para atualizar o dashboard
+    this.updateDashboard(revenues, expenses);
 
     this.loadImportedFiles();
   }
+  // --- FIM DA CORREÇÃO ---
 
   selectTab(tab: 'revenue' | 'expenses' | 'files'): void {
     this.activeTab = tab;

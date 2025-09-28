@@ -37,17 +37,11 @@ export class DashboardFilterComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     const today = new Date();
+
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const toInputDateString = (date: Date): string => {
-      const year = date.getFullYear();
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    this.startDate = toInputDateString(firstDayOfMonth);
-    this.endDate = toInputDateString(today);
+    this.startDate = firstDayOfMonth.toISOString().split('T')[0];
+    this.endDate = today.toISOString().split('T')[0];
 
     this.initializeDatasetId();
   }
