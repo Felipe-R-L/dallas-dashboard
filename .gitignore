@@ -5,6 +5,3 @@ node_modules
 dist
 env
 .env
-*environment.ts
-*environment.prod.ts
-/environments
