@@ -1,11 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CurrencyPipe, PercentPipe, NgClass, AsyncPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, tap } from 'rxjs';
 import { Timestamp } from '@angular/fire/firestore';
-
-import { PieChartComponent } from './charts/pie-chart';
-import { LineChartComponent } from './charts/line-chart';
 
 import {
   FirebaseService,
@@ -13,13 +10,15 @@ import {
   ImportedFile,
   Dataset,
 } from '../../app/services/firebase.service';
-import { SpreadsheetService } from '../../app/services/spreadsheet.service';
+import { PieChartComponent } from './charts/pie-chart';
+import { LineChartComponent } from './charts/line-chart';
 import { ModalComponent } from '../../app/components/modal/modal';
 import { FileUploaderComponent } from '../../app/components/file-uploader/file-uploader';
 import { CreateDatasetModalComponent } from '../../app/components/create-dataset-modal/create-dataset-modal';
 import { DashboardFilterComponent } from '../../app/components/dashboard-filter/dashboard-filter';
 import { DatasetsToOptionsPipe } from '../../app/pipes/dataset-to-options.pipe';
 import { CustomSelectComponent } from '../../app/components/custom-select/custom-select';
+import { SpreadsheetService } from '../../app/services/spreadsheet.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -43,13 +42,21 @@ import { CustomSelectComponent } from '../../app/components/custom-select/custom
   templateUrl: './dashboard.html',
 })
 export class Dashboard implements OnInit {
-  activeTab: 'revenue' | 'expenses' | 'files' = 'revenue';
+  private firebaseService = inject(FirebaseService);
+  private spreadsheetService = inject(SpreadsheetService);
 
+  activeTab: 'revenue' | 'expenses' | 'files' = 'revenue';
   grossRevenue = 0;
   totalExpenses = 0;
   netProfit = 0;
   profitMargin = 0;
   averageTicket = 0;
+  isUploadModalOpen = false;
+  isCreateDatasetModalOpen = false;
+  isProcessing = false;
+  hasDatasets = true;
+  activeDatasetId: string | null = null;
+  uploadTargetDatasetId: string | null = null;
 
   revenueBySubcategoryData: { name: string; value: number }[] = [];
   revenueByPaymentMethodData: { name: string; value: number }[] = [];
@@ -58,33 +65,22 @@ export class Dashboard implements OnInit {
   dailyRevenueXAxis: string[] = [];
   lineChartSeries: { name: string; data: (number | null)[] }[] = [];
 
-  isUploadModalOpen = false;
-  isCreateDatasetModalOpen = false;
-  isProcessing = false;
-
   datasets$: Observable<Dataset[]>;
   importedFiles$: Observable<ImportedFile[]> | null = null;
-  activeDatasetId: string | null = null;
-  uploadTargetDatasetId: string | null = null;
-  hasDatasets = true;
 
   private selectedFiles: File[] = [];
-  private dateRange = {
-    startDate: '2024-12-01',
-    endDate: '2024-12-31',
-  };
 
-  constructor(
-    private firebaseService: FirebaseService,
-    private spreadsheetService: SpreadsheetService,
-  ) {
+  constructor() {
     this.datasets$ = this.firebaseService.getDatasets().pipe(
       tap((datasets) => {
         this.hasDatasets = datasets.length > 0;
         if (this.hasDatasets && !this.activeDatasetId) {
-          this.activeDatasetId = datasets[0]?.id ?? null;
-          this.uploadTargetDatasetId = datasets[0]?.id ?? null;
-          this.loadDataForCurrentDataset();
+          const firstDatasetId = datasets[0]?.id ?? null;
+          this.activeDatasetId = firstDatasetId;
+          this.uploadTargetDatasetId = firstDatasetId;
+          if (firstDatasetId) {
+            this.loadInitialData(firstDatasetId);
+          }
         } else if (!this.hasDatasets) {
           this.resetDashboard();
         }
@@ -94,37 +90,47 @@ export class Dashboard implements OnInit {
 
   ngOnInit(): void {}
 
-  loadDataForCurrentDataset(): void {
-    if (!this.activeDatasetId) return;
-    this.loadData(this.activeDatasetId, this.dateRange);
-    if (this.activeTab === 'files') {
-      this.loadImportedFiles();
-    }
+  loadInitialData(datasetId: string): void {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    this.loadData(datasetId, firstDayOfMonth, today);
   }
 
-  onDateRangeChange(range: { startDate: string; endDate: string }): void {
-    this.dateRange = range;
-    this.loadDataForCurrentDataset();
+  onDateRangeChange(filters: {
+    datasetId: string | number;
+    startDate: string;
+    endDate: string;
+  }): void {
+    if (!filters.datasetId) return;
+    this.activeDatasetId = filters.datasetId as string;
+
+    // Converte as strings "AAAA-MM-DD" para objetos Date aqui
+    const [startYear, startMonth, startDay] = filters.startDate.split('-').map(Number);
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+
+    const [endYear, endMonth, endDay] = filters.endDate.split('-').map(Number);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
+
+    this.loadData(this.activeDatasetId, startDate, endDate);
   }
 
-  onDatasetChange(): void {
-    this.loadDataForCurrentDataset();
-  }
-
-  private loadData(datasetId: string, range: { startDate: string; endDate: string }): void {
-    const endDate = new Date(range.endDate);
-    endDate.setDate(endDate.getDate() + 1);
+  private loadData(datasetId: string, startDate: Date, endDate: Date): void {
+    // Garante que as horas cobrem o dia inteiro para a consulta
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
 
     this.firebaseService
-      .getTransactions(datasetId, new Date(range.startDate), endDate)
+      .getTransactions(datasetId, startDate, endDate)
       .subscribe(({ revenues, expenses }) => {
         this.updateDashboard(revenues, expenses);
       });
+
+    this.loadImportedFiles();
   }
 
   selectTab(tab: 'revenue' | 'expenses' | 'files'): void {
     this.activeTab = tab;
-    if (tab === 'files') {
+    if (this.activeDatasetId) {
       this.loadImportedFiles();
     }
   }
@@ -136,84 +142,55 @@ export class Dashboard implements OnInit {
   }
 
   async deleteImportedFile(fileId: string): Promise<void> {
-    if (
-      !this.activeDatasetId ||
-      !confirm(
-        'Tem a certeza que quer apagar este ficheiro e todas as suas transações? Esta ação é irreversível.',
-      )
-    ) {
-      return;
-    }
+    if (!this.activeDatasetId) return;
     try {
       await this.firebaseService.deleteFileAndTransactions(this.activeDatasetId, fileId);
-      alert('Ficheiro e transações apagados com sucesso.');
-      this.loadImportedFiles();
     } catch (error) {
       console.error('Erro ao apagar ficheiro:', error);
-      alert('Ocorreu um erro ao apagar o ficheiro.');
     }
   }
 
   async handleCreateDataset(name: string): Promise<void> {
     try {
-      const docRef = await this.firebaseService.createDataset(name);
-      this.activeDatasetId = docRef.id;
-      this.uploadTargetDatasetId = docRef.id;
+      await this.firebaseService.createDataset(name);
       this.closeCreateDatasetModal();
-      this.loadDataForCurrentDataset();
     } catch (error) {
       console.error('Erro ao criar dataset:', error);
-      alert('Ocorreu um erro ao criar a empresa.');
     }
   }
+
   onFilesEmitted(files: File[]): void {
     this.selectedFiles = files;
   }
 
   async processAndUploadFiles(): Promise<void> {
-    if (this.selectedFiles.length === 0 || !this.uploadTargetDatasetId) {
-      console.error('Nenhum arquivo selecionado ou nenhuma empresa alvo.');
-      return;
-    }
-
+    if (this.selectedFiles.length === 0 || !this.uploadTargetDatasetId) return;
     this.isProcessing = true;
-
     try {
       for (const file of this.selectedFiles) {
-        console.log(`Processando o arquivo: ${file.name}`);
-
         const transactions = await this.spreadsheetService.parseTransactionsFromFile(file);
-
         if (transactions.length > 0) {
           const fileInfo = {
             fileName: file.name,
             transactionCount: transactions.length,
             importedAt: Timestamp.now(),
           };
-
           await this.firebaseService.addFileAndTransactions(
             this.uploadTargetDatasetId,
             fileInfo,
             transactions,
           );
-          console.log(
-            `Arquivo ${file.name} e ${transactions.length} transações salvas com sucesso!`,
-          );
-        } else {
-          console.warn(`Nenhuma transação encontrada no arquivo: ${file.name}`);
         }
       }
-
-      alert('Todos os arquivos foram processados com sucesso!');
       this.closeUploadModal();
     } catch (error) {
-      console.error('Ocorreu um erro durante o processamento dos arquivos:', error);
-      alert('Ocorreu um erro ao processar os arquivos. Verifique o console para mais detalhes.');
+      console.error('Erro durante o processamento dos arquivos:', error);
     } finally {
       this.isProcessing = false;
       this.selectedFiles = [];
     }
   }
+
   resetDashboard(): void {
     this.grossRevenue = 0;
     this.totalExpenses = 0;
@@ -232,16 +209,13 @@ export class Dashboard implements OnInit {
   openUploadModal(): void {
     this.isUploadModalOpen = true;
   }
-
   closeUploadModal(): void {
     this.isUploadModalOpen = false;
     this.selectedFiles = [];
   }
-
   openCreateDatasetModal(): void {
     this.isCreateDatasetModalOpen = true;
   }
-
   closeCreateDatasetModal(): void {
     this.isCreateDatasetModalOpen = false;
   }

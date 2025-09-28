@@ -38,7 +38,7 @@ export interface Transaction {
   issueDate: string;
   timestamp?: Timestamp;
   datasetId: string;
-  fileId: string; // Link para o ficheiro importado
+  fileId: string;
 }
 
 @Injectable({
@@ -66,9 +66,11 @@ export class FirebaseService {
     const q = query(
       transactionsCol,
       where('datasetId', '==', datasetId),
+
       where('timestamp', '>=', Timestamp.fromDate(startDate)),
       where('timestamp', '<=', Timestamp.fromDate(endDate)),
     );
+
     return from(
       getDocs(q).then((snapshot) => {
         const allTransactions = snapshot.docs.map(
