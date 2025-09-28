@@ -12,20 +12,7 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    "paths": {
-      "@spartan-ng/helm/alert": ["./libs/ui/ui-alert-helm/src/index.ts"],
-      "@spartan-ng/helm/button": ["./libs/ui/ui-button-helm/src/index.ts"],
-      "@spartan-ng/helm/card": ["./libs/ui/ui-card-helm/src/index.ts"],
-      "@spartan-ng/helm/checkbox": ["./libs/ui/ui-checkbox-helm/src/index.ts"],
-      "@spartan-ng/helm/date-picker": ["./libs/ui/ui-date-picker-helm/src/index.ts"],
-      "@spartan-ng/helm/dialog": ["./libs/ui/ui-dialog-helm/src/index.ts"],
-      "@spartan-ng/helm/icon": ["./libs/ui/ui-icon-helm/src/index.ts"],
-      "@spartan-ng/helm/input": ["./libs/ui/ui-input-helm/src/index.ts"],
-      "@spartan-ng/helm/label": ["./libs/ui/ui-label-helm/src/index.ts"],
-      "@spartan-ng/helm/select": ["./libs/ui/ui-select-helm/src/index.ts"],
-      "@spartan-ng/helm/sonner": ["./libs/ui/ui-sonner-helm/src/index.ts"],
-      "@spartan-ng/helm/tabs": ["./libs/ui/ui-tabs-helm/src/index.ts"]
-    }
+    "types": ["node"]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
